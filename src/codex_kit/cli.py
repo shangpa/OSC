@@ -5,6 +5,7 @@ from pathlib import Path
 import sys
 from typing import TextIO
 
+from .agents import render_agents_graph, render_agents_lint, render_fix_dry_run
 from .evals import DEFAULT_CONFIG, load_config, render_dry_run, render_report, write_add_result, write_init_result
 from .mcp import doctor_config, render_mcp_report
 from .scan import render_scan_report, scan_repository
@@ -35,6 +36,21 @@ def _build_parser() -> argparse.ArgumentParser:
     scan = subcommands.add_parser("scan", help="Analyze a repository for Codex readiness")
     scan.add_argument("repository", nargs="?", default=".", type=Path, help="Repository path to scan (default: current directory)")
     scan.set_defaults(handler=_handle_scan)
+
+    agents = subcommands.add_parser("agents", help="Inspect AGENTS.md instruction scope and lint findings")
+    agents_subcommands = agents.add_subparsers(dest="agents_command")
+    agents_graph = agents_subcommands.add_parser("graph", help="Show AGENTS.md scope graph")
+    agents_graph.add_argument("repository", nargs="?", default=".", type=Path, help="Repository path")
+    agents_graph.set_defaults(handler=_handle_agents_graph)
+
+    agents_lint = agents_subcommands.add_parser("lint", help="Lint AGENTS.md instructions")
+    agents_lint.add_argument("repository", nargs="?", default=".", type=Path, help="Repository path")
+    agents_lint.set_defaults(handler=_handle_agents_lint)
+
+    fix = subcommands.add_parser("fix", help="Print safe Codex readiness fix suggestions")
+    fix.add_argument("repository", nargs="?", default=".", type=Path, help="Repository path")
+    fix.add_argument("--dry-run", action="store_true", help="Required; print suggestions without writing files")
+    fix.set_defaults(handler=_handle_fix)
 
     mcp = subcommands.add_parser("mcp", help="Inspect MCP configuration safety")
     mcp_subcommands = mcp.add_subparsers(dest="mcp_command")
@@ -73,6 +89,24 @@ def _build_parser() -> argparse.ArgumentParser:
 def _handle_scan(args: argparse.Namespace, stdout: TextIO) -> int:
     report = scan_repository(args.repository)
     stdout.write(render_scan_report(report))
+    return 0
+
+
+def _handle_agents_graph(args: argparse.Namespace, stdout: TextIO) -> int:
+    stdout.write(render_agents_graph(args.repository))
+    return 0
+
+
+def _handle_agents_lint(args: argparse.Namespace, stdout: TextIO) -> int:
+    output, code = render_agents_lint(args.repository)
+    stdout.write(output)
+    return code
+
+
+def _handle_fix(args: argparse.Namespace, stdout: TextIO) -> int:
+    if not args.dry_run:
+        raise ValueError("--dry-run is required for fix MVP")
+    stdout.write(render_fix_dry_run(args.repository))
     return 0
 
 

@@ -5,6 +5,9 @@ Codex Kit is a dependency-free Python CLI for repository-local Codex readiness c
 ## Features
 
 - `codex-kit scan`: inspect AGENTS.md files, Codex config presence, MCP references, stale path hints, missing test/build command guidance, unsafe destructive instructions, and Windows/WSL `node_modules` risk.
+- `codex-kit agents graph`: show which AGENTS.md files apply to which repository scopes.
+- `codex-kit agents lint`: expose AGENTS.md lint findings as a dedicated command.
+- `codex-kit fix --dry-run`: print safe fix suggestions without modifying files.
 - `codex-kit mcp doctor`: statically validate MCP configuration without starting MCP servers or printing secret values.
 - `codex-kit eval init/add/run --dry-run/report`: manage versioned repo-local eval cases without executing Codex.
 
@@ -26,6 +29,14 @@ Scan another repository:
 
 ```bash
 codex-kit scan /path/to/repo
+```
+
+Inspect AGENTS.md instruction scope and lint findings:
+
+```bash
+codex-kit agents graph /path/to/repo
+codex-kit agents lint /path/to/repo
+codex-kit fix /path/to/repo --dry-run
 ```
 
 Inspect MCP configuration:
