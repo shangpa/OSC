@@ -5,6 +5,7 @@ from pathlib import Path
 import sys
 from typing import TextIO
 
+from .evals import DEFAULT_CONFIG, load_config, render_dry_run, render_report, write_add_result, write_init_result
 from .mcp import doctor_config, render_mcp_report
 from .scan import render_scan_report, scan_repository
 
@@ -42,6 +43,30 @@ def _build_parser() -> argparse.ArgumentParser:
     doctor.add_argument("--repo", type=Path, default=Path("."), help="Repository path for AGENTS.md reference checks")
     doctor.set_defaults(handler=_handle_mcp_doctor)
 
+    eval_parser = subcommands.add_parser("eval", help="Manage repo-local eval cases")
+    eval_subcommands = eval_parser.add_subparsers(dest="eval_command")
+
+    eval_init = eval_subcommands.add_parser("init", help="Create a minimal eval config")
+    eval_init.add_argument("--config", type=Path, default=DEFAULT_CONFIG, help="Eval config path")
+    eval_init.set_defaults(handler=_handle_eval_init)
+
+    eval_add = eval_subcommands.add_parser("add", help="Register an eval case")
+    eval_add.add_argument("name", help="Unique eval case name")
+    eval_add.add_argument("--prompt", required=True, help="Task prompt")
+    eval_add.add_argument("--verify", required=True, help="Expected verification command")
+    eval_add.add_argument("--allowed-changes", required=True, help="Allowed changed files pattern")
+    eval_add.add_argument("--config", type=Path, default=DEFAULT_CONFIG, help="Eval config path")
+    eval_add.set_defaults(handler=_handle_eval_add)
+
+    eval_run = eval_subcommands.add_parser("run", help="Print eval execution plan")
+    eval_run.add_argument("--dry-run", action="store_true", help="Required for MVP; do not execute agents")
+    eval_run.add_argument("--config", type=Path, default=DEFAULT_CONFIG, help="Eval config path")
+    eval_run.set_defaults(handler=_handle_eval_run)
+
+    eval_report = eval_subcommands.add_parser("report", help="Summarize eval config validity")
+    eval_report.add_argument("--config", type=Path, default=DEFAULT_CONFIG, help="Eval config path")
+    eval_report.set_defaults(handler=_handle_eval_report)
+
     return parser
 
 
@@ -54,4 +79,24 @@ def _handle_scan(args: argparse.Namespace, stdout: TextIO) -> int:
 def _handle_mcp_doctor(args: argparse.Namespace, stdout: TextIO) -> int:
     report = doctor_config(args.config, args.repo)
     stdout.write(render_mcp_report(report))
+    return 0
+
+
+def _handle_eval_init(args: argparse.Namespace, stdout: TextIO) -> int:
+    return write_init_result(stdout, args.config)
+
+
+def _handle_eval_add(args: argparse.Namespace, stdout: TextIO) -> int:
+    return write_add_result(stdout, args.config, args.name, args.prompt, args.verify, args.allowed_changes)
+
+
+def _handle_eval_run(args: argparse.Namespace, stdout: TextIO) -> int:
+    if not args.dry_run:
+        raise ValueError("--dry-run is required for eval run MVP")
+    stdout.write(render_dry_run(load_config(args.config)))
+    return 0
+
+
+def _handle_eval_report(args: argparse.Namespace, stdout: TextIO) -> int:
+    stdout.write(render_report(load_config(args.config)))
     return 0
