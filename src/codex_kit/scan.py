@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from pathlib import Path
+import json
 import re
 
 IGNORED_DIRS = {".git", ".omo", "__pycache__", ".pytest_cache", "node_modules", ".venv", "venv", "dist", "build"}
@@ -111,6 +112,18 @@ def render_scan_report(report: ScanReport) -> str:
             lines.append("- None")
         lines.append("")
     return "\n".join(lines).rstrip() + "\n"
+
+
+def render_scan_json(report: ScanReport) -> str:
+    payload = {
+        "root": str(report.root),
+        "agents_files": report.agents_files,
+        "codex_config_present": report.codex_config_present,
+        "mcp_reference_count": report.mcp_reference_count,
+        "status_counts": report.status_counts,
+        "findings": [asdict(finding) for finding in report.findings],
+    }
+    return json.dumps(payload, indent=2, sort_keys=True, allow_nan=False) + "\n"
 
 
 def _agent_findings(path: Path, relative: str, text: str, repo: Path) -> list[Finding]:

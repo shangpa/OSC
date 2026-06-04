@@ -124,6 +124,19 @@ args = ["-m", "two"]
         self.assertIn("duplicate MCP server name", stdout.getvalue())
         self.assertIn("filesystem", stdout.getvalue())
 
+    def test_mcp_doctor_rejects_oversized_toml_before_parse(self):
+        with tempfile.TemporaryDirectory() as directory:
+            config = Path(directory) / "config.toml"
+            config.write_text("#" * (1024 * 1024 + 1), encoding="utf-8")
+            stdout = io.StringIO()
+            stderr = io.StringIO()
+
+            code = main(["mcp", "doctor", "--config", str(config)], stdout=stdout, stderr=stderr)
+
+        self.assertEqual(code, 2)
+        self.assertEqual(stdout.getvalue(), "")
+        self.assertIn("too large", stderr.getvalue())
+
 
 if __name__ == "__main__":
     unittest.main()

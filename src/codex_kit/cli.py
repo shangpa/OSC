@@ -8,7 +8,7 @@ from typing import TextIO
 from .agents import render_agents_graph, render_agents_lint, render_fix_dry_run
 from .evals import DEFAULT_CONFIG, load_config, render_dry_run, render_report, write_add_result, write_init_result
 from .mcp import doctor_config, render_mcp_report
-from .scan import render_scan_report, scan_repository
+from .scan import render_scan_json, render_scan_report, scan_repository
 
 
 def main(argv: list[str] | None = None, *, stdout: TextIO | None = None, stderr: TextIO | None = None) -> int:
@@ -30,43 +30,45 @@ def main(argv: list[str] | None = None, *, stdout: TextIO | None = None, stderr:
 
 
 def _build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="codex-kit", description="Repository-local utilities for Codex readiness.")
+    parser = argparse.ArgumentParser(prog="codex-kit", description="Repository-local utilities for Codex readiness.", allow_abbrev=False)
     subcommands = parser.add_subparsers(dest="command")
 
-    scan = subcommands.add_parser("scan", help="Analyze a repository for Codex readiness")
+    scan = subcommands.add_parser("scan", help="Analyze a repository for Codex readiness", allow_abbrev=False)
+    scan.add_argument("--json", action="store_true", help="Emit machine-readable JSON instead of the terminal report")
     scan.add_argument("repository", nargs="?", default=".", type=Path, help="Repository path to scan (default: current directory)")
     scan.set_defaults(handler=_handle_scan)
 
-    agents = subcommands.add_parser("agents", help="Inspect AGENTS.md instruction scope and lint findings")
+    agents = subcommands.add_parser("agents", help="Inspect AGENTS.md instruction scope and lint findings", allow_abbrev=False)
     agents_subcommands = agents.add_subparsers(dest="agents_command")
-    agents_graph = agents_subcommands.add_parser("graph", help="Show AGENTS.md scope graph")
+    agents_graph = agents_subcommands.add_parser("graph", help="Show AGENTS.md scope graph", allow_abbrev=False)
     agents_graph.add_argument("repository", nargs="?", default=".", type=Path, help="Repository path")
+    agents_graph.add_argument("--for", dest="target", type=Path, help="Show the effective AGENTS.md chain for this target path")
     agents_graph.set_defaults(handler=_handle_agents_graph)
 
-    agents_lint = agents_subcommands.add_parser("lint", help="Lint AGENTS.md instructions")
+    agents_lint = agents_subcommands.add_parser("lint", help="Lint AGENTS.md instructions", allow_abbrev=False)
     agents_lint.add_argument("repository", nargs="?", default=".", type=Path, help="Repository path")
     agents_lint.set_defaults(handler=_handle_agents_lint)
 
-    fix = subcommands.add_parser("fix", help="Print safe Codex readiness fix suggestions")
+    fix = subcommands.add_parser("fix", help="Print safe Codex readiness fix suggestions", allow_abbrev=False)
     fix.add_argument("repository", nargs="?", default=".", type=Path, help="Repository path")
     fix.add_argument("--dry-run", action="store_true", help="Required; print suggestions without writing files")
     fix.set_defaults(handler=_handle_fix)
 
-    mcp = subcommands.add_parser("mcp", help="Inspect MCP configuration safety")
+    mcp = subcommands.add_parser("mcp", help="Inspect MCP configuration safety", allow_abbrev=False)
     mcp_subcommands = mcp.add_subparsers(dest="mcp_command")
-    doctor = mcp_subcommands.add_parser("doctor", help="Validate MCP config without starting servers")
+    doctor = mcp_subcommands.add_parser("doctor", help="Validate MCP config without starting servers", allow_abbrev=False)
     doctor.add_argument("--config", type=Path, help="Path to Codex config TOML")
     doctor.add_argument("--repo", type=Path, default=Path("."), help="Repository path for AGENTS.md reference checks")
     doctor.set_defaults(handler=_handle_mcp_doctor)
 
-    eval_parser = subcommands.add_parser("eval", help="Manage repo-local eval cases")
+    eval_parser = subcommands.add_parser("eval", help="Manage repo-local eval cases", allow_abbrev=False)
     eval_subcommands = eval_parser.add_subparsers(dest="eval_command")
 
-    eval_init = eval_subcommands.add_parser("init", help="Create a minimal eval config")
+    eval_init = eval_subcommands.add_parser("init", help="Create a minimal eval config", allow_abbrev=False)
     eval_init.add_argument("--config", type=Path, default=DEFAULT_CONFIG, help="Eval config path")
     eval_init.set_defaults(handler=_handle_eval_init)
 
-    eval_add = eval_subcommands.add_parser("add", help="Register an eval case")
+    eval_add = eval_subcommands.add_parser("add", help="Register an eval case", allow_abbrev=False)
     eval_add.add_argument("name", help="Unique eval case name")
     eval_add.add_argument("--prompt", required=True, help="Task prompt")
     eval_add.add_argument("--verify", required=True, help="Expected verification command")
@@ -74,12 +76,12 @@ def _build_parser() -> argparse.ArgumentParser:
     eval_add.add_argument("--config", type=Path, default=DEFAULT_CONFIG, help="Eval config path")
     eval_add.set_defaults(handler=_handle_eval_add)
 
-    eval_run = eval_subcommands.add_parser("run", help="Print eval execution plan")
+    eval_run = eval_subcommands.add_parser("run", help="Print eval execution plan", allow_abbrev=False)
     eval_run.add_argument("--dry-run", action="store_true", help="Required for MVP; do not execute agents")
     eval_run.add_argument("--config", type=Path, default=DEFAULT_CONFIG, help="Eval config path")
     eval_run.set_defaults(handler=_handle_eval_run)
 
-    eval_report = eval_subcommands.add_parser("report", help="Summarize eval config validity")
+    eval_report = eval_subcommands.add_parser("report", help="Summarize eval config validity", allow_abbrev=False)
     eval_report.add_argument("--config", type=Path, default=DEFAULT_CONFIG, help="Eval config path")
     eval_report.set_defaults(handler=_handle_eval_report)
 
@@ -88,12 +90,12 @@ def _build_parser() -> argparse.ArgumentParser:
 
 def _handle_scan(args: argparse.Namespace, stdout: TextIO) -> int:
     report = scan_repository(args.repository)
-    stdout.write(render_scan_report(report))
+    stdout.write(render_scan_json(report) if args.json else render_scan_report(report))
     return 0
 
 
 def _handle_agents_graph(args: argparse.Namespace, stdout: TextIO) -> int:
-    stdout.write(render_agents_graph(args.repository))
+    stdout.write(render_agents_graph(args.repository, args.target))
     return 0
 
 

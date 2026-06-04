@@ -1,4 +1,5 @@
 import io
+import json
 from pathlib import Path
 import tempfile
 import unittest
@@ -77,6 +78,26 @@ Build check: `python -m compileall src tests`.
         self.assertEqual(code, 2)
         self.assertEqual(stdout.getvalue(), "")
         self.assertIn("error:", stderr.getvalue())
+
+    def test_scan_cli_can_emit_machine_readable_json(self):
+        with tempfile.TemporaryDirectory() as directory:
+            repo = Path(directory)
+            (repo / "AGENTS.md").write_text(
+                "Run tests with `python -m unittest`.\nMCP server: filesystem\n",
+                encoding="utf-8",
+            )
+            stdout = io.StringIO()
+            stderr = io.StringIO()
+
+            code = main(["scan", "--json", str(repo)], stdout=stdout, stderr=stderr)
+
+        self.assertEqual(code, 0)
+        self.assertEqual(stderr.getvalue(), "")
+        payload = json.loads(stdout.getvalue())
+        self.assertEqual(payload["agents_files"], ["AGENTS.md"])
+        self.assertIn("status_counts", payload)
+        self.assertIn("findings", payload)
+        self.assertNotIn("# Codex Kit Scan", stdout.getvalue())
 
 
 if __name__ == "__main__":

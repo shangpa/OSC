@@ -1,3 +1,4 @@
+from contextlib import redirect_stderr
 import io
 import json
 from pathlib import Path
@@ -5,7 +6,7 @@ import tempfile
 import unittest
 
 from codex_kit.cli import main
-from codex_kit.evals import add_case, init_config, load_config
+from codex_kit.evals import _save_config, add_case, init_config, load_config
 
 
 class EvalHarnessTests(unittest.TestCase):
@@ -101,6 +102,39 @@ class EvalHarnessTests(unittest.TestCase):
         self.assertEqual(code, 2)
         self.assertEqual(stdout.getvalue(), "")
         self.assertIn("--dry-run is required", stderr.getvalue())
+
+    def test_eval_run_does_not_accept_abbreviated_dry_run_flag(self):
+        with tempfile.TemporaryDirectory() as directory:
+            config_path = Path(directory) / ".codex-kit" / "evals.json"
+            init_config(config_path)
+            stdout = io.StringIO()
+            stderr = io.StringIO()
+
+            with redirect_stderr(io.StringIO()):
+                code = main(["eval", "run", "--dry", "--config", str(config_path)], stdout=stdout, stderr=stderr)
+
+        self.assertEqual(code, 2)
+
+    def test_eval_config_serialization_rejects_non_finite_json(self):
+        with tempfile.TemporaryDirectory() as directory:
+            config_path = Path(directory) / ".codex-kit" / "evals.json"
+            config_path.parent.mkdir(parents=True)
+
+            with self.assertRaises(ValueError):
+                _save_config(
+                    config_path,
+                    {
+                        "version": 1,
+                        "cases": [
+                            {
+                                "name": "bad",
+                                "prompt": float("nan"),
+                                "expected_command": "python -m unittest",
+                                "allowed_changes": "src/**",
+                            }
+                        ],
+                    },
+                )
 
 
 if __name__ == "__main__":

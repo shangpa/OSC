@@ -29,9 +29,23 @@ def discover_agent_files(root: str | Path) -> list[AgentFile]:
     return sorted(files, key=lambda item: (item.scope.count("/"), item.path))
 
 
-def render_agents_graph(root: str | Path) -> str:
-    files = discover_agent_files(root)
-    lines = ["# AGENTS Graph", f"Repository: {Path(root).resolve()}", f"AGENTS.md files: {len(files)}", ""]
+def render_agents_graph(root: str | Path, target: str | Path | None = None) -> str:
+    repo = Path(root).resolve()
+    files = discover_agent_files(repo)
+    lines = ["# AGENTS Graph", f"Repository: {repo}", f"AGENTS.md files: {len(files)}", ""]
+    if target is not None:
+        target_relative = _target_relative(repo, target)
+        chain = [candidate.path for candidate in files if _scope_applies_to_path(candidate.scope, target_relative)]
+        lines.extend(
+            [
+                f"Target: {target_relative}",
+                "",
+                "## Effective chain for target",
+                "- " + (" > ".join(chain) if chain else "No AGENTS.md files apply"),
+            ]
+        )
+        return "\n".join(lines) + "\n"
+
     if not files:
         lines.append("- No AGENTS.md files found")
         return "\n".join(lines) + "\n"
@@ -88,6 +102,19 @@ def render_fix_dry_run(root: str | Path) -> str:
     else:
         lines.append("- No safe automatic suggestions available")
     return "\n".join(lines) + "\n"
+
+
+def _target_relative(repo: Path, target: str | Path) -> str:
+    target_path = Path(target)
+    resolved = target_path.resolve() if target_path.is_absolute() else (repo / target_path).resolve()
+    try:
+        return resolved.relative_to(repo).as_posix()
+    except ValueError as exc:
+        raise ValueError(f"target path is outside repository: {target}") from exc
+
+
+def _scope_applies_to_path(candidate: str, target: str) -> bool:
+    return candidate == "." or target == candidate or target.startswith(candidate + "/")
 
 
 def _scope_applies(candidate: str, target: str) -> bool:

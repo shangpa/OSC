@@ -79,6 +79,29 @@ class AgentsAndFixTests(unittest.TestCase):
         self.assertEqual(stdout.getvalue(), "")
         self.assertIn("--dry-run is required", stderr.getvalue())
 
+    def test_agents_graph_for_target_shows_target_effective_chain_only(self):
+        with tempfile.TemporaryDirectory() as directory:
+            repo = Path(directory)
+            (repo / "AGENTS.md").write_text("Root instructions\nRun tests with `python -m unittest`.\n", encoding="utf-8")
+            nested = repo / "packages" / "api"
+            nested.mkdir(parents=True)
+            (nested / "AGENTS.md").write_text("API instructions\nBuild with `python -m compileall src tests`.\n", encoding="utf-8")
+            target = nested / "src" / "app.py"
+            target.parent.mkdir()
+            target.write_text("print('ok')\n", encoding="utf-8")
+            stdout = io.StringIO()
+            stderr = io.StringIO()
+
+            code = main(["agents", "graph", str(repo), "--for", "packages/api/src/app.py"], stdout=stdout, stderr=stderr)
+
+        self.assertEqual(code, 0)
+        self.assertEqual(stderr.getvalue(), "")
+        output = stdout.getvalue()
+        self.assertIn("Target: packages/api/src/app.py", output)
+        self.assertIn("Effective chain for target", output)
+        self.assertIn("AGENTS.md > packages/api/AGENTS.md", output)
+        self.assertNotIn("- .: AGENTS.md", output)
+
 
 if __name__ == "__main__":
     unittest.main()

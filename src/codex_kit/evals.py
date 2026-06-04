@@ -94,7 +94,7 @@ def write_add_result(stdout: TextIO, path: Path, name: str, prompt: str, verify:
 
 
 def _save_config(path: Path, config: dict[str, Any]) -> None:
-    path.write_text(json.dumps(config, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    path.write_text(json.dumps(config, indent=2, sort_keys=True, allow_nan=False) + "\n", encoding="utf-8")
 
 
 def _validate_config(data: Any) -> None:

@@ -13,6 +13,7 @@ from .scan import IGNORED_DIRS
 MCP_REF = re.compile(r"mcp(?:\s+server)?\s*[:=]\s*([A-Za-z0-9_.-]+)", re.IGNORECASE)
 SERVER_TABLE = re.compile(r"^\s*\[(?:mcp_servers|mcpServers)\.([^\]]+)\]", re.MULTILINE)
 BROAD_PATHS = {"/", "/*", "/mnt", "/mnt/c", "C:\\", "C:/", "~"}
+MAX_TOML_BYTES = 1024 * 1024
 
 
 @dataclass(frozen=True)
@@ -61,6 +62,8 @@ def doctor_config(config_path: str | Path | None, repo: str | Path) -> McpDoctor
     if not selected.is_file():
         raise ValueError(f"MCP config not found: {selected}")
 
+    if selected.stat().st_size > MAX_TOML_BYTES:
+        raise ValueError(f"MCP config too large: {selected} exceeds {MAX_TOML_BYTES} bytes")
     config_text = selected.read_text(encoding="utf-8")
     duplicate_names = _duplicate_server_names(config_text)
     for name in duplicate_names:
