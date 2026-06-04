@@ -3,16 +3,16 @@ requires = ["setuptools>=69"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "maintainer-report"
-version = "0.1.0"
-description = "A dependency-free CLI for turning issue and pull request exports into maintainer triage reports."
+name = "codex-kit"
+version = "0.2.0"
+description = "Dependency-free CLI tools for Codex readiness, MCP safety checks, and repo-local agent evals."
 readme = "README.md"
 requires-python = ">=3.12"
 license = { text = "MIT" }
 authors = [
-  { name = "Maintainer Report contributors" }
+  { name = "Codex Kit contributors" }
 ]
-keywords = ["open-source", "maintenance", "triage", "issues", "pull-requests"]
+keywords = ["codex", "agents", "mcp", "evals", "cli", "open-source"]
 classifiers = [
   "Development Status :: 3 - Alpha",
   "Environment :: Console",
@@ -20,13 +20,12 @@ classifiers = [
   "License :: OSI Approved :: MIT License",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.12",
-  "Topic :: Software Development :: Bug Tracking",
   "Topic :: Software Development :: Quality Assurance",
 ]
 dependencies = []
 
 [project.scripts]
-maintainer-report = "maintainer_report.cli:main"
+codex-kit = "codex_kit.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

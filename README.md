@@ -1,15 +1,12 @@
-# Maintainer Report
+# Codex Kit
 
-Maintainer Report is a dependency-free Python CLI that turns issue and pull request export JSON into a markdown triage report. It is designed for open-source maintainers who want a quick local view of stale work, unlabeled work, and label distribution before reviewing queues or planning a release.
+Codex Kit is a dependency-free Python CLI for repository-local Codex readiness checks, MCP safety validation, and small agent eval workflows. It is an early-stage open-source maintainer tool and does not claim external program eligibility, adoption, or sponsorship.
 
-This project is an early-stage open-source scaffold. It does not claim ecosystem importance, adoption, sponsorship, or eligibility for any external support program.
+## Features
 
-## What It Does
-
-- Reads a JSON export containing issues and pull requests.
-- Counts open issues, open pull requests, closed items, stale open items, and unlabeled open items.
-- Produces a deterministic markdown report for maintainers.
-- Runs locally without GitHub tokens, API keys, network access, or runtime dependencies.
+- `codex-kit scan`: inspect AGENTS.md files, Codex config presence, MCP references, stale path hints, missing test/build command guidance, unsafe destructive instructions, and Windows/WSL `node_modules` risk.
+- `codex-kit mcp doctor`: planned static MCP configuration validation.
+- `codex-kit eval`: planned repo-local eval case management.
 
 ## Install From Source
 
@@ -19,73 +16,33 @@ python -m pip install -e .
 
 ## Usage
 
-Print a report to stdout:
+Scan the current repository:
 
 ```bash
-maintainer-report samples/github-export.json --as-of 2026-06-04
+codex-kit scan
 ```
 
-Write a report to a file:
+Scan another repository:
 
 ```bash
-maintainer-report samples/github-export.json --as-of 2026-06-04 --output report.md
+codex-kit scan /path/to/repo
 ```
 
 Run without installing the console script:
 
 ```bash
-PYTHONPATH=src python -m maintainer_report samples/github-export.json --as-of 2026-06-04
-```
-
-## Input Format
-
-The CLI accepts either a list of item objects or an object with these buckets:
-
-```json
-{
-  "issues": [],
-  "pull_requests": []
-}
-```
-
-Each item can include:
-
-```json
-{
-  "number": 1,
-  "title": "Crash on startup",
-  "state": "open",
-  "labels": [{ "name": "bug" }],
-  "updated_at": "2026-05-01T09:30:00Z",
-  "html_url": "https://example.test/issues/1"
-}
-```
-
-Labels may be strings or GitHub-style objects with a `name` field. Pull requests can be supplied in the `pull_requests` bucket, marked with `kind: "pull_request"`, or inferred from URLs containing `/pull/`.
-
-## Example Output
-
-```markdown
-# Maintainer Report
-
-## Summary
-- Total items: 4
-- Open issues: 2
-- Open pull requests: 1
-- Closed items: 1
-- Stale open items: 2
-- Unlabeled open items: 1
+PYTHONPATH=src python -m codex_kit scan .
 ```
 
 ## Development
 
-Run the test suite:
+Run tests:
 
 ```bash
 PYTHONPATH=src python -m unittest discover -s tests
 ```
 
-Compile-check the package and tests:
+Compile-check source and tests:
 
 ```bash
 python -m compileall src tests
@@ -93,9 +50,7 @@ python -m compileall src tests
 
 ## Maintainer Workflow Fit
 
-This repository focuses on practical open-source maintenance work: triage, release preparation, and queue review. A maintainer can use the report before reviewing issues, preparing release notes, or deciding where automation would reduce repetitive work.
-
-Potential future use of API credits should be optional and maintainer-controlled, such as summarizing local reports, drafting release-note candidates from already exported metadata, or generating test fixtures. The current tool intentionally works without external APIs.
+Codex Kit is intended for maintainers who want to understand what instructions, MCP references, and local eval definitions an agent will see before they rely on automation for issue triage, code review, or release work.
 
 ## License
 
