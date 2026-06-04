@@ -78,6 +78,52 @@ env = { TOKEN = "DO_NOT_PRINT" }
         self.assertEqual(stdout.getvalue(), "")
         self.assertIn("error:", stderr.getvalue())
 
+    def test_doctor_config_detects_mcp_references_in_skill_files(self):
+        with tempfile.TemporaryDirectory() as directory:
+            repo = Path(directory)
+            skills_dir = repo / "skills" / "browser-skill"
+            skills_dir.mkdir(parents=True)
+            (skills_dir / "SKILL.md").write_text("Use MCP server: browser\n", encoding="utf-8")
+            config = repo / "config.toml"
+            config.write_text(
+                """[mcp_servers.filesystem]
+command = "python"
+args = ["-m", "safe_server"]
+""",
+                encoding="utf-8",
+            )
+
+            report = doctor_config(config, repo)
+
+        messages = "\n".join(finding.message for finding in report.findings)
+        self.assertEqual(report.referenced_servers, ["browser"])
+        self.assertIn("MCP server browser referenced but not configured", messages)
+
+    def test_mcp_doctor_reports_duplicate_server_names_actionably(self):
+        with tempfile.TemporaryDirectory() as directory:
+            repo = Path(directory)
+            config = repo / "config.toml"
+            config.write_text(
+                """[mcp_servers.filesystem]
+command = "python"
+args = ["-m", "one"]
+
+[mcp_servers.filesystem]
+command = "python"
+args = ["-m", "two"]
+""",
+                encoding="utf-8",
+            )
+            stdout = io.StringIO()
+            stderr = io.StringIO()
+
+            code = main(["mcp", "doctor", "--config", str(config), "--repo", str(repo)], stdout=stdout, stderr=stderr)
+
+        self.assertEqual(code, 0)
+        self.assertEqual(stderr.getvalue(), "")
+        self.assertIn("duplicate MCP server name", stdout.getvalue())
+        self.assertIn("filesystem", stdout.getvalue())
+
 
 if __name__ == "__main__":
     unittest.main()
