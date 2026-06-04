@@ -1,0 +1,38 @@
+{
+  "issues": [
+    {
+      "number": 1,
+      "title": "Crash on startup",
+      "state": "open",
+      "labels": [{ "name": "bug" }],
+      "updated_at": "2026-05-01T09:30:00Z",
+      "html_url": "https://example.test/issues/1"
+    },
+    {
+      "number": 2,
+      "title": "Document release process",
+      "state": "closed",
+      "labels": ["docs"],
+      "updated_at": "2026-06-01T12:00:00Z",
+      "html_url": "https://example.test/issues/2"
+    },
+    {
+      "number": 3,
+      "title": "Needs triage",
+      "state": "open",
+      "labels": [],
+      "updated_at": "2026-06-03",
+      "html_url": "https://example.test/issues/3"
+    }
+  ],
+  "pull_requests": [
+    {
+      "number": 4,
+      "title": "Add JSON fixture support",
+      "state": "open",
+      "labels": [{ "name": "enhancement" }],
+      "updated_at": "2026-04-20T08:00:00Z",
+      "html_url": "https://example.test/pull/4"
+    }
+  ]
+}
